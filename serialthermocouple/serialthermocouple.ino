@@ -18,7 +18,14 @@
 #include "Adafruit_MAX31855.h"
 #include "config.h"
 
-AdafruitIO_Feed *tempr = io.feed("bbqtemp");
+//AdafruitIO_Group *grp = io.group("bbq");
+AdafruitIO_Feed *curTemp = io.feed("bbq.curTemp");
+AdafruitIO_Feed *prevTemp = io.feed("bbq.prevTemp");
+AdafruitIO_Feed *decDeg = io.feed("bbq.decDeg");
+AdafruitIO_Feed *incDeg = io.feed("bbq.incDeg");
+AdafruitIO_Feed *minDecr = io.feed("bbq.minDecr");
+AdafruitIO_Feed *minIncr = io.feed("bbq.minIncr");
+
 
 // Default connection is using software SPI, but comment and uncomment one of
 // the two examples below to switch between software SPI and hardware SPI:
@@ -73,20 +80,29 @@ int decreasedTempTtl = 0;
 int increasedTempTtl = 0;
 
 void loop() {
+      io.run();
+
   currentTemp = thermocouple.readFahrenheit();
+  if (currentTemp < 1000 && currentTemp > -1000) {
+    
   
-    io.run();
    // basic readout test, just print the current temp
     calcTemp(currentTemp); 
-    tempr->save(currentTemp);
+    curTemp->save(currentTemp);
+    prevTemp->save(previousTemp);
+    decDeg->save(decreasedTempTtl);
+    incDeg->save(increasedTempTtl);
+    minDecr->save(minutesDecreasing);
+    minIncr->save(minutesIncreasing);
 
 
     debugPrint();
 
     
     previousTemp = currentTemp;
+  
    delay(1000 * 60);
-   
+  } 
 }
 
 void debugPrint(){
@@ -97,11 +113,11 @@ void debugPrint(){
 }
 void calcTemp(int currentTemp){
 
-   int diff = floor(currentTemp - previousTemp);
-  if (diff > 0){incrementIncreased(diff);}
-  if (diff > 0){incrementDecreased(diff);}
-  
+  int diff = floor(currentTemp - previousTemp);
+  if (currentTemp > previousTemp){incrementIncreased(diff);}
+  if (currentTemp < previousTemp){incrementDecreased(diff);}
 }
+
 void incrementDecreased(int tempDiff){
   resetIncreasing();
   minutesDecreasing += 1;
